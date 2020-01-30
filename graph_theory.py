@@ -6,7 +6,6 @@ class Graph:
         self.adjacency = dict(adjacency)
         self.level = level
         self.cache = cache
-        
 
     @property
     def vertices(self):
@@ -104,7 +103,6 @@ class Graph:
         
         if self.is_connected == False:
             print('does not exist: graph is not connected')
-            raise
             return None
     
         if self.is_tree:
@@ -122,52 +120,88 @@ class Graph:
             return lambda G: deletion_poly(G) - contraction_poly(G)
             #return lambda G: self.cache.search_cache(self.deletion_graph(vertex1, vertex2))(G) - self.cache.search_cache(self.contraction_graph(vertex1, vertex2))(G)
     
-    def glue(self):
-        #Collect all nodes in queue
-            #pop first 
-            #name it vertex_1
-        vertices = [v for v in self.vertices]
-        vertex_1 = vertices.pop()
+    def glue1(self):
 
+        vertices_remaining = [v for v in self.vertices]
+        vertex_1 = vertices_remaining.pop()
 
-        #take subgraph_of_common_vertex(self,vertex_1) - g1
-             #compute chromatic_polynomial -> poly1
         graph_main = self.subgraph_of_common_vertex(self,vertex_1)
-        print(graph_main.adjacency)
-        self.chromatic_polynomial = graph_main.deletion_contraction
-        print(vertex_1,'<-----------')
-        print([self.chromatic_polynomial(x) for x in range(10)])
-        for vertex_2 in graph_main.adjacency:
-            if vertex_2 in vertices:
-                 print(vertex_2)
 
-            #for each node 'vertex_2' in subgraph if vertex_2 in queue, 
-                #if empty, return
-                #pop vertex_2 from queue
-                #compute subgraph_of_common_vertex(self,vertex_2) - g2
-                #compute chromatic_polynomial -> poly2
-                #construct subgraph(vertex_1.intersenction(vertex_2)) 
-                    #compute chromatic_polynomial -> poly3
-
-            #join g1,g2
-            #update chromatic_polynomial= poly1*poly2/poly3
-                #
+        previous_main_chromatic_polynomial = graph_main.deletion_contraction
 
 
 
+        while vertices_remaining:
 
+            vertex_2 = [v for v in graph_main.vertices if v in vertices_remaining][0]
+            vertices_remaining = [v for v in vertices_remaining if v != vertex_2]
 
+            subgraph_vertex_2       = self.subgraph_of_common_vertex(self,vertex_2)
+            intersection_subgraph   = self.subgraph(self,graph_main.vertices.intersection(subgraph_vertex_2.vertices))
+            
+            subgraph_vertex_2.chromatic_polynomial      = subgraph_vertex_2.deletion_contraction
+            intersection_subgraph.chromatic_polynomial  = intersection_subgraph.deletion_contraction
+            
+            graph_main = self.subgraph(self,graph_main.vertices.union(subgraph_vertex_2.vertices))
 
-
-    # @property
-    # def chromatic_number(self):
+            chromatic_polynomial = lambda G:  previous_main_chromatic_polynomial(G)*subgraph_vertex_2.chromatic_polynomial(G)/max(intersection_subgraph.chromatic_polynomial(G),1)
         
-    #     chromatic_number = 1
-    #     chromatic_polynomial = self.chromatic_polynomial()
+
+
+        self.chromatic_polynomial = chromatic_polynomial
+
+           # previous_main_chromatic_polynomial = new_poly
+
+        return [self.chromatic_polynomial(x) for x in range(10)]
+
+    def glue(self):
+        vertices_remaining = [v for v in self.vertices]
+        vertex_1 = vertices_remaining.pop()
+
+        initial_graph = self.subgraph_of_common_vertex(self,vertex_1)
+        initial_graph.chromatic_polynomial = initial_graph.deletion_contraction
+
+        self.chromatic_polynomial = lambda G: initial_graph.deletion_contraction(G)*self._glue(initial_graph, vertices_remaining)(G)
+
+
+
+    def _glue(self, graph_main, vertices_remaining):
+
+        print('here')
+
+        if vertices_remaining:
+
+            vertex_2 = [v for v in graph_main.vertices if v in vertices_remaining][0]
+            vertices_remaining = [v for v in vertices_remaining if v != vertex_2]
+
+            subgraph_vertex_2       = self.subgraph_of_common_vertex(self,vertex_2)
+            intersection_subgraph   = self.subgraph(self,graph_main.vertices.intersection(subgraph_vertex_2.vertices))
+                
+            subgraph_vertex_2.chromatic_polynomial      = subgraph_vertex_2.deletion_contraction
+            intersection_subgraph.chromatic_polynomial  = lambda G: max(intersection_subgraph.deletion_contraction(G),1)
+
+            graph_main = self.subgraph(self,graph_main.vertices.union(subgraph_vertex_2.vertices))
+
+            #alpha = self._glue(graph_main, vertices_remaining)
+
+
+            return lambda G: self._glue(graph_main, vertices_remaining)(G)*subgraph_vertex_2.chromatic_polynomial(G)/intersection_subgraph.chromatic_polynomial(G)
+            #return lambda G: alpha(G)*subgraph_vertex_2.chromatic_polynomial(G)/intersection_subgraph.chromatic_polynomial(G)
         
-    #     while chromatic_polynomial(chromatic_number) <= 0:
-    #         chromatic_number += 1
-    #     return chromatic_number
+        else:
+            
+            return lambda G: 1
+
+    @property
+    def chromatic_number(self):
+        if self.chromatic_polynomial == None:
+            self.glue()
+
+        chromatic_number = 1
+
+        while self.chromatic_polynomial(chromatic_number) <= 0:
+            chromatic_number += 1
+        return chromatic_number
 
 america = {
 
@@ -221,6 +255,10 @@ america = {
             'Wyoming':{'Colorado','Idaho','Montana','Nebraska','South_Dakota','Utah'},  
 } 
 
+complete = {x : {y for y in range(8) if y != x} for x in range(8)}
+
+
 if __name__ == '__main__':
+    #print(america)
     graph = Graph(america)
-    graph.glue()
+    print(graph.chromatic_number)
