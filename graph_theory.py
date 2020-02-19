@@ -150,6 +150,96 @@ class Graph:
                 degree_count_dictionary[len(connected_nodes)] = {vertex}
         return degree_count_dictionary
 
+    def color(self, starting_node=None):
+
+        coloring = {x: set() for x in range(self.chromatic_number)}
+        
+        if starting_node == None:
+            uncolored_vertices = self.vertices
+            starting_node = uncolored_vertices.pop()
+        else:
+            uncolored_vertices = {v for v in self.vertices if v != starting_node}
+
+        coloring[0].add(starting_node)
+
+        temp_coloring = dict(coloring)
+        temp_uncolored_vertices = set(uncolored_vertices)
+
+
+        for vertex in self.adjacency[starting_node].intersection(set(uncolored_vertices)):
+
+
+
+            graph_coloring, graph_uncolored_vertices =  self._color(vertex,temp_uncolored_vertices,temp_coloring,depth=2)
+
+            if graph_coloring == False:
+                temp_coloring, temp_uncolored_vertices = dict(coloring), set(uncolored_vertices)
+
+            else:
+                temp_coloring, temp_uncolored_vertices = graph_coloring, graph_uncolored_vertices
+                if temp_uncolored_vertices == set():
+                    print('here')
+                    return temp_coloring
+
+        return temp_coloring
+
+    def _color(self,starting_node,uncolored_vertices,coloring,depth=None):
+        print(depth)
+        if uncolored_vertices == set():
+            return coloring, uncolored_vertices
+
+        adjacent_nodes = self.adjacency[starting_node]
+
+        # colored_vertices = self.vertices.difference(uncolored_vertices)
+        # nodes_of_restriction =  set(adjacent_nodes).intersection(colored_vertices)
+        # colors_available = set(coloring.keys())  
+        # for key,value in coloring.items():
+        #     if nodes_of_restriction.intersection(value):
+        #         colors_available.remove(key)
+
+        colors_available = self._colors_available(adjacent_nodes,uncolored_vertices,coloring)
+
+        uncolored_vertices.remove(starting_node)
+
+        
+
+        for color in colors_available:
+
+            temp_coloring  = dict(coloring)
+            temp_coloring[color].add(starting_node)
+            temp_uncolored_vertices = set(uncolored_vertices)
+
+            if adjacent_nodes.intersection(uncolored_vertices) == set():
+                return temp_coloring, temp_uncolored_vertices
+
+            for vertex in list(adjacent_nodes.intersection(set(uncolored_vertices))):
+
+                if vertex in temp_uncolored_vertices:
+
+                    graph_coloring, graph_uncolored_vertices = self._color(vertex,temp_uncolored_vertices,temp_coloring,depth=depth+1)
+
+                    if graph_coloring == False:
+                        return False, False
+                    else:
+
+                        temp_coloring, temp_uncolored_vertices = graph_coloring, graph_uncolored_vertices
+                        if adjacent_nodes.intersection(temp_uncolored_vertices) == set():
+                            return temp_coloring, temp_uncolored_vertices
+
+        return False, False
+
+    def _colors_available(self,adjacent_nodes,uncolored_vertices,coloring):
+
+        colored_vertices = self.vertices.difference(uncolored_vertices)
+        nodes_of_restriction =  set(adjacent_nodes).intersection(colored_vertices)
+        
+        colors_available = set(coloring.keys())  
+        for key,value in coloring.items():
+            if nodes_of_restriction.intersection(value):
+                colors_available.remove(key)
+
+        return colors_available
+
     def traverse(self, vertex_set, vertex):
         connected = self.adjacency[vertex]
         to_be_traversed = set([v for v in connected if v not in vertex_set])
@@ -274,54 +364,54 @@ class Graph:
 
 class SampleGraphs:            
     america = {
-                'Alabama':{'Florida','Georgia','Mississippi','Tennessee'},
-                'Arizona':{'California','Colorado','Nevada','New_Mexico','Utah'},
-                'Arkansas':{'Louisiana','Mississippi','Missouri','Oklahoma','Tennessee','Texas'},
-                'California':{'Arizona','Nevada','Oregon'},
-                'Colorado':{'Arizona','Kansas','Nebraska','New_Mexico','Oklahoma','Utah','Wyoming'},
-                'Connecticut':{'Massachusetts','New_York','Rhode_Island'},
-                'Delaware':{'Maryland','New_Jersey','Pennsylvania'},
-                'Florida':{'Alabama','Georgia'},
-                'Georgia':{'Alabama','Florida','North_Carolina','South_Carolina','Tennessee'},
-                'Idaho':{'Montana','Nevada','Oregon','Utah','Washington','Wyoming'},
-                'Illinois':{'Indiana','Iowa','Kentucky','Missouri','Wisconsin'},
-                'Indiana':{'Illinois','Kentucky','Michigan','Ohio'},
-                'Iowa':{'Illinois','Minnesota','Missouri','Nebraska','South_Dakota','Wisconsin'},
-                'Kansas':{'Colorado','Missouri','Nebraska','Oklahoma'},
-                'Kentucky':{'Illinois','Indiana','Missouri','Ohio','Tennessee','Virginia','West_Virginia'},
-                'Louisiana':{'Arkansas','Mississippi','Texas'},
-                'Maine':{'New_Hampshire'},
-                'Maryland':{'Delaware','Pennsylvania','Virginia','West_Virginia'},
-                'Massachusetts':{'Connecticut','New_Hampshire','New_York','Rhode_Island','Vermont'},
-                'Michigan':{'Indiana','Ohio','Wisconsin'},
-                'Minnesota':{'Iowa','North_Dakota','South_Dakota','Wisconsin'},
-                'Mississippi':{'Alabama','Arkansas','Louisiana','Tennessee'},
-                'Missouri':{'Illinois','Iowa','Arkansas','Kansas','Kentucky','Nebraska','Oklahoma','Tennessee'},
-                'Montana':{'North_Dakota','South_Dakota','Idaho','Wyoming'},
-                'Nebraska':{'Colorado','Iowa','Kansas','Missouri','South_Dakota','Wyoming'},
-                'Nevada':{'Arizona','California','Idaho','Oregon','Utah'},
-                'New_Hampshire':{'Massachusetts','Vermont','Maine'},
-                'New_Jersey':{'Delaware','New_York','Pennsylvania'},
-                'New_Mexico':{'Arizona','Colorado','Oklahoma','Texas','Utah'},
-                'New_York':{'Connecticut','Massachusetts','New_Jersey','Pennsylvania','Vermont'},
-                'North_Carolina':{'Georgia','South_Carolina','Tennessee','Virginia'},
-                'North_Dakota':{'Minnesota','Montana','South_Dakota'},
-                'Ohio':{'Indiana','Kentucky','Michigan','Pennsylvania','West_Virginia'},
-                'Oklahoma':{'Arkansas','Colorado','Kansas','Missouri','New_Mexico','Texas'},
-                'Oregon':{'California','Idaho','Nevada','Washington'},
-                'Pennsylvania':{'Delaware','Maryland','New_Jersey','New_York','Ohio','West_Virginia'},
-                'Rhode_Island':{'Connecticut','Massachusetts'},
-                'South_Carolina':{'Georgia','North_Carolina'},
-                'South_Dakota':{'Iowa','Minnesota','Montana','Nebraska','North_Dakota','Wyoming'},
-                'Tennessee':{'Alabama','Arkansas','Georgia','Kentucky','Mississippi','Missouri','North_Carolina','Virginia'},
-                'Texas':{'Arkansas','Louisiana','New_Mexico','Oklahoma'},
-                'Utah':{'Arizona','Colorado','Idaho','Nevada','New_Mexico','Wyoming'},
-                'Vermont':{'Massachusetts','New_Hampshire','New_York'},
-                'Virginia':{'Kentucky','Maryland','North_Carolina','Tennessee','West_Virginia'},
-                'Washington':{'Idaho','Oregon'},
-                'West_Virginia':{'Kentucky','Maryland','Ohio','Pennsylvania','Virginia'},
-                'Wisconsin':{'Illinois','Iowa','Michigan','Minnesota'},
-                'Wyoming':{'Colorado','Idaho','Montana','Nebraska','South_Dakota','Utah'},  
+                'Alabama'       : {'Florida','Georgia','Mississippi','Tennessee'},
+                'Arizona'       : {'California','Colorado','Nevada','New_Mexico','Utah'},
+                'Arkansas'      : {'Louisiana','Mississippi','Missouri','Oklahoma','Tennessee','Texas'},
+                'California'    : {'Arizona','Nevada','Oregon'},
+                'Colorado'      : {'Arizona','Kansas','Nebraska','New_Mexico','Oklahoma','Utah','Wyoming'},
+                'Connecticut'   : {'Massachusetts','New_York','Rhode_Island'},
+                'Delaware'      : {'Maryland','New_Jersey','Pennsylvania'},
+                'Florida'       : {'Alabama','Georgia'},
+                'Georgia'       : {'Alabama','Florida','North_Carolina','South_Carolina','Tennessee'},
+                'Idaho'         : {'Montana','Nevada','Oregon','Utah','Washington','Wyoming'},
+                'Illinois'      : {'Indiana','Iowa','Kentucky','Missouri','Wisconsin'},
+                'Indiana'       : {'Illinois','Kentucky','Michigan','Ohio'},
+                'Iowa'          : {'Illinois','Minnesota','Missouri','Nebraska','South_Dakota','Wisconsin'},
+                'Kansas'        : {'Colorado','Missouri','Nebraska','Oklahoma'},
+                'Kentucky'      : {'Illinois','Indiana','Missouri','Ohio','Tennessee','Virginia','West_Virginia'},
+                'Louisiana'     : {'Arkansas','Mississippi','Texas'},
+                'Maine'         : {'New_Hampshire'},
+                'Maryland'      : {'Delaware','Pennsylvania','Virginia','West_Virginia'},
+                'Massachusetts' : {'Connecticut','New_Hampshire','New_York','Rhode_Island','Vermont'},
+                'Michigan'      : {'Indiana','Ohio','Wisconsin'},
+                'Minnesota'     : {'Iowa','North_Dakota','South_Dakota','Wisconsin'},
+                'Mississippi'   : {'Alabama','Arkansas','Louisiana','Tennessee'},
+                'Missouri'      : {'Illinois','Iowa','Arkansas','Kansas','Kentucky','Nebraska','Oklahoma','Tennessee'},
+                'Montana'       : {'North_Dakota','South_Dakota','Idaho','Wyoming'},
+                'Nebraska'      : {'Colorado','Iowa','Kansas','Missouri','South_Dakota','Wyoming'},
+                'Nevada'        : {'Arizona','California','Idaho','Oregon','Utah'},
+                'New_Hampshire' : {'Massachusetts','Vermont','Maine'},
+                'New_Jersey'    : {'Delaware','New_York','Pennsylvania'},
+                'New_Mexico'    : {'Arizona','Colorado','Oklahoma','Texas','Utah'},
+                'New_York'      : {'Connecticut','Massachusetts','New_Jersey','Pennsylvania','Vermont'},
+                'North_Carolina': {'Georgia','South_Carolina','Tennessee','Virginia'},
+                'North_Dakota'  : {'Minnesota','Montana','South_Dakota'},
+                'Ohio'          : {'Indiana','Kentucky','Michigan','Pennsylvania','West_Virginia'},
+                'Oklahoma'      : {'Arkansas','Colorado','Kansas','Missouri','New_Mexico','Texas'},
+                'Oregon'        : {'California','Idaho','Nevada','Washington'},
+                'Pennsylvania'  : {'Delaware','Maryland','New_Jersey','New_York','Ohio','West_Virginia'},
+                'Rhode_Island'  : {'Connecticut','Massachusetts'},
+                'South_Carolina': {'Georgia','North_Carolina'},
+                'South_Dakota'  : {'Iowa','Minnesota','Montana','Nebraska','North_Dakota','Wyoming'},
+                'Tennessee'     : {'Alabama','Arkansas','Georgia','Kentucky','Mississippi','Missouri','North_Carolina','Virginia'},
+                'Texas'         : {'Arkansas','Louisiana','New_Mexico','Oklahoma'},
+                'Utah'          : {'Arizona','Colorado','Idaho','Nevada','New_Mexico','Wyoming'},
+                'Vermont'       : {'Massachusetts','New_Hampshire','New_York'},
+                'Virginia'      : {'Kentucky','Maryland','North_Carolina','Tennessee','West_Virginia'},
+                'Washington'    : {'Idaho','Oregon'},
+                'West_Virginia' : {'Kentucky','Maryland','Ohio','Pennsylvania','Virginia'},
+                'Wisconsin'     : {'Illinois','Iowa','Michigan','Minnesota'},
+                'Wyoming'       : {'Colorado','Idaho','Montana','Nebraska','South_Dakota','Utah'},  
     } 
 
     @staticmethod
@@ -338,10 +428,39 @@ class SampleGraphs:
             7: {6},
             }
 
+    g2 = {  3   : {50,48,52},
+            14  : {50,48,49,52,2},
+            50  : {12,14,3,52,81},
+            12  : {50,48,52,49,2},
+            49  : {81,14,12},
+            48  : {3,14,12,81},
+            52  : {50,3,14,61,81,2,12},
+            81  : {50,48,52,2,49},
+            2   : {81,52,14,12},
+            61  : {52}
+    }
+
+    g3 = {  1: {2,3},
+            2: {1,3,4},
+            3: {1,2,4},
+            4: {2,3}
+    }
 
 if __name__ == '__main__':
     #print(america)
 
-    graph = Graph(complete)
-    print(graph.chromatic_number)
-    print([graph.chromatic_polynomial(x) for x in range(10)])
+    dictionary = SampleGraphs.america
+   
+
+    graph = Graph(dictionary)
+    coloring = graph.color()
+
+    full_states = set()
+    for color, group in coloring.items():
+        print(color,':',group)
+        full_states = full_states.union(group)
+        for state in group:
+            print('bad:',dictionary[state].intersection(group))
+
+
+    print(set(dictionary.keys()).difference(full_states))
